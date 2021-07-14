@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import {writeFile, findModules, findBuild} from './file';
+import {writeFile, findModules, findBuild, findComponents} from './file';
 import {ModuleModifier} from './modulemodifier';
 import {getNameParts, getComponentNameParts, getSelectorName, getPrefix, camelCase, getModuleClassName} from './naming';
 
@@ -266,11 +266,15 @@ export function getNameOfObject(defaultName: string, prompt: string, exampleName
     }));
 }
 
-export async function getBuildType(): Promise<string> {
-    const buildTypeOptions = [BuildFileType.ng_project, BuildFileType.ts_project];
-    return await vscode.window.showQuickPick(buildTypeOptions, {
-        placeHolder: 'Ng project or TS project?',
-    })
+export async function getBuildType(inFolder: string): Promise<string> {
+    const buildType = await findComponents(inFolder).then(foundComponent => {
+        if(foundComponent) {
+            return BuildFileType.ng_project;
+        } else {
+            return BuildFileType.ts_project;
+        }
+    });
+    return buildType;
 }
 
 export async function goToBuild(inDirectory: string) {
@@ -373,7 +377,7 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        getBuildType().then((buildType) => {
+        getBuildType(uri.fsPath).then((buildType) => {
             return createBuildFile(uri.fsPath, buildType);
         }).catch((err) => {
             vscode.window.showErrorMessage(err.toString());

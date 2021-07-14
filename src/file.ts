@@ -72,6 +72,40 @@ export function findBuild(inDirectory: string): Promise<string> {
     });
 }
 
+export function findComponents(inDirectory: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+        fs.readdir(inDirectory, (err, items) => {
+            if (err) {
+                reject(err);
+            } else {
+                const foundBuildFile = items.find(item => item.indexOf('BUILD.bazel') !== -1);
+                if(foundBuildFile) {
+                    resolve(false);
+                }
+
+                const foundComponent = items.find(item => item.indexOf('.component.ts') !== -1);
+                if(foundComponent) {
+                    vscode.window.showInformationMessage(foundComponent + ' HELLO');
+                    resolve(true);
+                }
+
+                const subfolders = items.filter(item => item.indexOf('.') === -1);
+                subfolders.forEach(subfolder => {
+                    findComponents(path.join(inDirectory, subfolder)).then(foundComponent => {
+                        vscode.window.showInformationMessage(foundComponent + ' hi');
+                        if(foundComponent) {
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    });
+                });
+                resolve(false);
+            }
+        });
+    });
+}
+
 export function ensureDot(relativePath: string): string {
     if (relativePath[0] === '.') {
         return relativePath;
