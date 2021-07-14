@@ -118,7 +118,9 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showErrorMessage('No folder selected to find a BUILD file');
             return;
         }
-        goToBuild(path.dirname(uri.fsPath));
+        const buildPath = path.dirname(path.basename(uri.fsPath) == 'BUILD.bazel' ?
+            path.dirname(uri.fsPath) : uri.fsPath);
+        goToBuild(buildPath);
     });
     context.subscriptions.push(findBuildListener);
 }
