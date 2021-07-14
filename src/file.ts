@@ -85,19 +85,46 @@ export function findComponents(inDirectory: string): Promise<boolean> {
 
                 const foundComponent = items.find(item => item.indexOf('.component.ts') !== -1);
                 if(foundComponent) {
-                    vscode.window.showInformationMessage(foundComponent + ' HELLO');
                     resolve(true);
                 }
 
                 const subfolders = items.filter(item => item.indexOf('.') === -1);
+                if(subfolders.length == 0) {
+                    resolve(false);
+                }
                 subfolders.forEach(subfolder => {
                     findComponents(path.join(inDirectory, subfolder)).then(foundComponent => {
-                        vscode.window.showInformationMessage(foundComponent + ' hi');
-                        if(foundComponent) {
-                            resolve(true);
-                        } else {
-                            resolve(false);
-                        }
+                        resolve(foundComponent);
+                    });
+                });
+            }
+        });
+    });
+}
+
+export function findScalaFiles(inDirectory: string): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+        fs.readdir(inDirectory, (err, items) => {
+            if (err) {
+                reject(err);
+            } else {
+                const foundBuildFile = items.find(item => item.indexOf('BUILD.bazel') !== -1);
+                if(foundBuildFile) {
+                    resolve(false);
+                }
+
+                const foundScalaFile = items.find(item => item.indexOf('.scala') !== -1);
+                if(foundScalaFile) {
+                    resolve(true);
+                }
+
+                const subfolders = items.filter(item => item.indexOf('.') === -1);
+                if(subfolders.length == 0) {
+                    resolve(false);
+                }
+                subfolders.forEach(subfolder => {
+                    findComponents(path.join(inDirectory, subfolder)).then(foundScalaFile => {
+                        resolve(foundScalaFile);
                     });
                 });
                 resolve(false);

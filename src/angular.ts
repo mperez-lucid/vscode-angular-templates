@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import {writeFile, findModules, findBuild, findComponents} from './file';
+import {writeFile, findModules, findBuild, findComponents, findScalaFiles} from './file';
 import {ModuleModifier} from './modulemodifier';
 import {getNameParts, getComponentNameParts, getSelectorName, getPrefix, camelCase, getModuleClassName} from './naming';
 
@@ -16,6 +16,7 @@ enum FileType {
 
 enum BuildFileType {
     ng_project = "ng_project",
+    scala_library = "scala_library",
     ts_project = "ts_project"
 }
 
@@ -80,6 +81,20 @@ export class ${getDirectiveClassName(name)} {
 }
 
 function getBazelTemplate(folderPath: string, buildType: string) {
+    if(buildType == BuildFileType.scala_library) {
+        return `load("@rules_scala_annex//rules:scala_with_scalafmt.bzl", "scala_library")
+
+scala_library(
+    name = "${path.basename(folderPath)}",
+    srcs = glob(["*.scala"]),
+    format = True,
+    visibility = ["//visibility:public"],
+    deps = [
+    ],
+)
+    `
+    }
+    
     return `load("//cake/build/bazel:${buildType}.bzl", "${buildType}")
 
 package(default_visibility = ["//visibility:public"])
@@ -267,13 +282,24 @@ export function getNameOfObject(defaultName: string, prompt: string, exampleName
 }
 
 export async function getBuildType(inFolder: string): Promise<string> {
-    const buildType = await findComponents(inFolder).then(foundComponent => {
+    const isComponent = findComponents(inFolder).then(foundComponent => {
         if(foundComponent) {
-            return BuildFileType.ng_project;
+            return true;
         } else {
-            return BuildFileType.ts_project;
+            return false;
         }
     });
+    if(await isComponent) {
+        return BuildFileType.ng_project;
+    }
+    const isScalaFile = findScalaFiles(inFolder).then(foundScalaFile => {
+        if(foundScalaFile) {
+            return true;
+        } else {
+            return false;
+        }
+    })
+    const buildType = (await isScalaFile) ? BuildFileType.scala_library : BuildFileType.ts_project;
     return buildType;
 }
 
