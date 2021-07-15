@@ -22,8 +22,10 @@
         "onCommand:ngTemplates.create-module",
         "onCommand:ngTemplates.create-unit-test",
         "onCommand:ngTemplates.find-build",
+        "onCommand:ngTemplates.formatNgModule",
         "onCommand:ngTemplates.formatTS",
-        "onLanguage:bazel"
+        "onLanguage:bazel",
+        "onLanguage:typescript"
     ],
     "main": "./out/extension",
     "contributes": {
@@ -89,6 +91,10 @@
             {
                 "command": "ngTemplates.find-build",
                 "title": "Find BUILD file"
+            },
+            {
+                "command": "ngTemplates.formatNgModule",
+                "title": "Format ng-module"
             },
             {
                 "command": "ngTemplates.formatTS",

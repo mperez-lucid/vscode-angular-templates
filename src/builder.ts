@@ -4,7 +4,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import {writeFile, findBuild, findComponents, findScalaFiles} from './file';
-import {CodeLensSource} from './codelenssource';
+import {BazelCodeLensSource} from './lens/bazelcodelenssource';
+import { ModuleCodeLensSource } from './lens/modulescodelenssource';
 
 enum BuildFileType {
     ng_project = "ng_project",
@@ -111,14 +112,31 @@ function buildBuild(uri: vscode.Uri, targetName?: string) {
     }
 }
 
-function formatFolder(uri: vscode.Uri, targetName?: string ) {
+function formatFolder(uri: vscode.Uri) {
     const workspace = vscode.workspace.getWorkspaceFolder(uri);
     if (workspace) {
         const terminal = vscode.window.activeTerminal;
         terminal.show(true);
         const pathToWorkspace = path.relative(process.cwd(), workspace.uri.path);
         const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path));
-        const consoleCommand = `bazel format ts --target-filter "**/${pathToFile}"`;
+        const consoleCommand = `bazel format ng-module --target-filter "**/${pathToFile}"`;
+        terminal.sendText(consoleCommand, true);
+    } else {
+        vscode.window.showErrorMessage('Could not find VS Code workspace.');
+    }
+}
+
+function formatModules(uri: vscode.Uri) {
+    const workspace = vscode.workspace.getWorkspaceFolder(uri);
+    if (workspace) {
+        const terminal = vscode.window.activeTerminal;
+        const isBuildFile = path.basename(uri.path) == 'BUILD.bazel';
+        terminal.show(true);
+        const pathToWorkspace = path.relative(process.cwd(), workspace.uri.path);
+        const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path));
+        const consoleCommand = 
+            isBuildFile ? `bazel format ng-module --target-filter "**/${pathToFile}"` 
+                        : `bazel format ng-module --file-filter "**/${pathToFile}/${path.basename(uri.path)}"`;
         terminal.sendText(consoleCommand, true);
     } else {
         vscode.window.showErrorMessage('Could not find VS Code workspace.');
@@ -152,19 +170,29 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(findBuildListener);
 
-    const formatTsListener = vscode.commands.registerCommand('ngTemplates.formatTS', (uri: vscode.Uri, targetName: string) => {
-        formatFolder(uri, targetName);
+    const formatTsListener = vscode.commands.registerCommand('ngTemplates.formatTS', (uri: vscode.Uri) => {
+        formatFolder(uri);
     });
     context.subscriptions.push(formatTsListener);
+
+    const formatNgModule = vscode.commands.registerCommand('ngTemplates.formatNgModule', (uri: vscode.Uri) => {
+        formatModules(uri);
+    });
 
     const buildBuildListener = vscode.commands.registerCommand('ngTemplates.buildBuild', (uri: vscode.Uri, targetName: string) => {
         buildBuild(uri, targetName);
     });
 
-    const codeLensSource = new CodeLensSource();
-	const codeLensDisposable = vscode.languages.registerCodeLensProvider(codeLensSource.selector, codeLensSource);
-    context.subscriptions.push(codeLensDisposable);
+    const bazelCodeLensSource = new BazelCodeLensSource();
+	const bazelCodeLensDisposable = vscode.languages.registerCodeLensProvider(bazelCodeLensSource.selector, bazelCodeLensSource);
+    context.subscriptions.push(bazelCodeLensDisposable);
+
+    const moduleCodeLensSource = new ModuleCodeLensSource();
+	const moduleCodeLensDisposable = vscode.languages.registerCodeLensProvider(moduleCodeLensSource.selector, moduleCodeLensSource);
+    context.subscriptions.push(moduleCodeLensDisposable);
+
     context.subscriptions.push(buildBuildListener);
+    context.subscriptions.push(formatNgModule);
 }
 
 export function deactivate() {
