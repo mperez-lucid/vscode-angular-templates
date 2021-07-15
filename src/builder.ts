@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import {writeFile, findBuild, findComponents, findScalaFiles} from './file';
+import {CodeLensSource} from './codelenssource';
 
 enum BuildFileType {
     ng_project = "ng_project",
@@ -96,6 +97,21 @@ export async function goToBuild(inDirectory: string) {
     });
 }
 
+function buildBuild(uri: vscode.Uri) {
+    const workspace = vscode.workspace.getWorkspaceFolder(uri);
+    if (workspace) {
+        const terminal = vscode.window.activeTerminal;
+        terminal.show(true);
+        const pathToWorkspace = path.relative(process.cwd(), workspace.uri.path);
+        const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path)) + ':' + path.basename(path.dirname(uri.path));;
+        const consoleCommand = `bazel build ${pathToFile}`;
+        console.log('sending', consoleCommand);
+        terminal.sendText(consoleCommand, true);
+    } else {
+        vscode.window.showErrorMessage('Could not find VS Code workspace.');
+    }
+}
+
 export function activate(context: vscode.ExtensionContext) {
     const createBuildFileListener = vscode.commands.registerCommand('ngTemplates.create-build-file', (uri: vscode.Uri) => {
         if (!uri.fsPath) {
@@ -113,7 +129,6 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(createBuildFileListener);
 
     const findBuildListener = vscode.commands.registerCommand('ngTemplates.find-build', (uri: vscode.Uri) => {
-        
         if (!uri.fsPath) {
             vscode.window.showErrorMessage('No folder selected to find a BUILD file');
             return;
@@ -123,6 +138,15 @@ export function activate(context: vscode.ExtensionContext) {
         goToBuild(buildPath);
     });
     context.subscriptions.push(findBuildListener);
+
+    const buildBuildListener = vscode.commands.registerCommand('ngTemplates.buildBuild', (uri: vscode.Uri) => {
+        buildBuild(uri);
+    });
+
+    const codeLensSource = new CodeLensSource();
+	const codeLensDisposable = vscode.languages.registerCodeLensProvider(codeLensSource.selector, codeLensSource);
+    context.subscriptions.push(codeLensDisposable);
+    context.subscriptions.push(buildBuildListener);
 }
 
 export function deactivate() {

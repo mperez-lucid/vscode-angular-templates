@@ -15,12 +15,14 @@
         "Other"
     ],
     "activationEvents": [
+        "onCommand:ngTemplates.buildBuild",
         "onCommand:ngTemplates.create-build-file",
         "onCommand:ngTemplates.create-component",
         "onCommand:ngTemplates.create-directive",
         "onCommand:ngTemplates.create-module",
         "onCommand:ngTemplates.create-unit-test",
-        "onCommand:ngTemplates.find-build"
+        "onCommand:ngTemplates.find-build",
+        "onLanguage:bazel"
     ],
     "main": "./out/extension",
     "contributes": {
@@ -59,6 +61,10 @@
             ]
         },
         "commands": [
+            {
+                "command": "ngTemplates.buildBuild",
+                "title": "Build BUILD file"
+            },
             {
                 "command": "ngTemplates.create-build-file",
                 "title": "Create BUILD file"
