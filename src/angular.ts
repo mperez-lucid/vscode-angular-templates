@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import {writeFile, findModules, findBuild, findComponents, findScalaFiles} from './file';
+import {writeFile, findModules} from './file';
 import {ModuleModifier} from './modulemodifier';
 import {getNameParts, getComponentNameParts, getSelectorName, getPrefix, camelCase, getModuleClassName} from './naming';
 
@@ -12,12 +12,6 @@ const InvalidCharacterRegex = /[^\w\d_]|^\d/i
 enum FileType {
     Component,
     Directive,
-}
-
-enum BuildFileType {
-    ng_project = "ng_project",
-    scala_library = "scala_library",
-    ts_project = "ts_project"
 }
 
 function getLessTemplate(name: string[]) {
@@ -80,36 +74,6 @@ export class ${getDirectiveClassName(name)} {
 `;
 }
 
-function getBazelTemplate(folderPath: string, buildType: string) {
-    if(buildType == BuildFileType.scala_library) {
-        return `load("@rules_scala_annex//rules:scala_with_scalafmt.bzl", "scala_library")
-
-scala_library(
-    name = "${path.basename(folderPath)}",
-    srcs = glob(["*.scala"]),
-    format = True,
-    visibility = ["//visibility:public"],
-    deps = [
-    ],
-)
-    `
-    }
-    
-    return `load("//cake/build/bazel:${buildType}.bzl", "${buildType}")
-
-package(default_visibility = ["//visibility:public"])
-
-${buildType}(
-    name = "${path.basename(folderPath)}",
-    module_name = "${getLucidPrefixedPath(folderPath)}",
-    tsconfig = "//cake/app/webroot/ts:tsconfig.111.json",
-    deps=[
-
-    ],
-)
-`;
-}
-
 function getFolderName(nameParts: string[]): string {
     return nameParts.join('');
 }
@@ -132,11 +96,6 @@ function getDirectiveSelectorName(prefix: string[], nameParts: string[]): string
 
 function getDirectiveClassName(nameParts: string[]): string {
     return camelCase(nameParts, true) + 'Directive';
-}
-
-function getLucidPrefixedPath(path: string): string {
-    const index = path.indexOf('cake/app/webroot/ts');
-    return '@lucid' + path.substring(index + 19);
 }
 
 function createModule(prefix: string[], name: string[], inFolder: string):Promise<any> {
@@ -197,21 +156,6 @@ function createDirective(prefix: string[], name: string[], inFolder: string): Pr
     } else {
         return writeFile(directivePath, getDirectiveTemplate(prefix, name)).then(() => {
             return vscode.workspace.openTextDocument(directivePath).then(textDoc => {
-                return vscode.window.showTextDocument(textDoc);
-            });
-        });
-    }
-}
-
-function createBuildFile(inFolder: string, buildType: string):Promise<any> {
-    const buildPath = path.join(inFolder, "BUILD.bazel");
-    if (fs.existsSync(buildPath)) {
-        return Promise.reject(new Error("BUILD file already exists in " + inFolder));
-    } else {
-        return new Promise((resolve, reject) => {
-            writeFile(buildPath, getBazelTemplate(inFolder, buildType)).then(resolve, reject);
-        }).then(() => {
-            return vscode.workspace.openTextDocument(buildPath).then((textDoc) => {
                 return vscode.window.showTextDocument(textDoc);
             });
         });
@@ -279,40 +223,6 @@ export function getNameOfObject(defaultName: string, prompt: string, exampleName
             return result;
         }
     }));
-}
-
-export async function getBuildType(inFolder: string): Promise<string> {
-    const isComponent = findComponents(inFolder).then(foundComponent => {
-        if(foundComponent) {
-            return true;
-        } else {
-            return false;
-        }
-    });
-    if(await isComponent) {
-        return BuildFileType.ng_project;
-    }
-    const isScalaFile = findScalaFiles(inFolder).then(foundScalaFile => {
-        if(foundScalaFile) {
-            return true;
-        } else {
-            return false;
-        }
-    })
-    const buildType = (await isScalaFile) ? BuildFileType.scala_library : BuildFileType.ts_project;
-    return buildType;
-}
-
-export async function goToBuild(inDirectory: string) {
-    findBuild(inDirectory).then(buildPath => {
-        if(buildPath) {
-            return vscode.workspace.openTextDocument(buildPath).then((textDoc) => {
-                return vscode.window.showTextDocument(textDoc);
-            });
-        } else {
-            vscode.window.showErrorMessage('No path found for BUILD file.');
-        }
-    });
 }
 
 export function activate(context: vscode.ExtensionContext) {
@@ -396,31 +306,6 @@ export function activate(context: vscode.ExtensionContext) {
         });
     });
     context.subscriptions.push(createModuleListener);
-
-    const createBuildFileListener = vscode.commands.registerCommand('ngTemplates.create-build-file', (uri: vscode.Uri) => {
-        if (!uri.fsPath) {
-            vscode.window.showErrorMessage('No folder selected to contain new build file');
-            return;
-        }
-
-        getBuildType(uri.fsPath).then((buildType) => {
-            return createBuildFile(uri.fsPath, buildType);
-        }).catch((err) => {
-            vscode.window.showErrorMessage(err.toString());
-            console.error(err);
-        });
-    });
-    context.subscriptions.push(createBuildFileListener);
-
-    const findBuildListener = vscode.commands.registerCommand('ngTemplates.find-build', (uri: vscode.Uri) => {
-        
-        if (!uri.fsPath) {
-            vscode.window.showErrorMessage('No folder selected to find a BUILD file');
-            return;
-        }
-        goToBuild(path.dirname(uri.fsPath));
-    });
-    context.subscriptions.push(findBuildListener);
 }
 
 export function deactivate() {
