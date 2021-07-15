@@ -103,8 +103,22 @@ function buildBuild(uri: vscode.Uri, targetName?: string) {
         const terminal = vscode.window.activeTerminal;
         terminal.show(true);
         const pathToWorkspace = path.relative(process.cwd(), workspace.uri.path);
-        const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path)) + ':' + (targetName ? targetName : path.basename(path.dirname(uri.path)));;
+        const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path)) + ':' + (targetName ? targetName : path.basename(path.dirname(uri.path)));
         const consoleCommand = `bazel build ${pathToFile}`;
+        terminal.sendText(consoleCommand, true);
+    } else {
+        vscode.window.showErrorMessage('Could not find VS Code workspace.');
+    }
+}
+
+function formatFolder(uri: vscode.Uri, targetName?: string ) {
+    const workspace = vscode.workspace.getWorkspaceFolder(uri);
+    if (workspace) {
+        const terminal = vscode.window.activeTerminal;
+        terminal.show(true);
+        const pathToWorkspace = path.relative(process.cwd(), workspace.uri.path);
+        const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path));
+        const consoleCommand = `bazel format ts --target-filter "**/${pathToFile}"`;
         terminal.sendText(consoleCommand, true);
     } else {
         vscode.window.showErrorMessage('Could not find VS Code workspace.');
@@ -137,6 +151,11 @@ export function activate(context: vscode.ExtensionContext) {
         goToBuild(buildPath);
     });
     context.subscriptions.push(findBuildListener);
+
+    const formatTsListener = vscode.commands.registerCommand('ngTemplates.formatTS', (uri: vscode.Uri, targetName: string) => {
+        formatFolder(uri, targetName);
+    });
+    context.subscriptions.push(formatTsListener);
 
     const buildBuildListener = vscode.commands.registerCommand('ngTemplates.buildBuild', (uri: vscode.Uri, targetName: string) => {
         buildBuild(uri, targetName);

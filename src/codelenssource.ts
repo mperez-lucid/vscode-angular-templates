@@ -23,6 +23,8 @@ export class CodeLensSource implements vscode.CodeLensProvider {
         // if(lenses.length == 0) {
         //     lenses.push(new vscode.CodeLens(new vscode.Range(0,0,0,0), {title: 'Build target', command: 'ngTemplates.buildBuild', arguments: [document.uri]}));
         // }
+
+        lenses.push(new vscode.CodeLens(new vscode.Range(0,0,0,0), {title: 'Format TS', command: 'ngTemplates.formatTS', arguments: [document.uri]}));
         
         return lenses;
     }
