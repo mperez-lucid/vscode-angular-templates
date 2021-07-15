@@ -78,12 +78,13 @@ export function parseBuildFile(document: TextDocument, token: CancellationToken)
     
     
     const ngProjectIndex = text.lastIndexOf('ng_project');
+    const isNgProject = ngProjectIndex != -1;
     const tsProjectIndex = text.lastIndexOf('ts_project');
     const index = Math.max(ngProjectIndex, tsProjectIndex);
     if (token.isCancellationRequested || index == -1) {
-        return [];
+        return {range: [], isNgProject: false};
     }
-    return [new vscode.Range(document.positionAt(index), document.positionAt(index))];
+    return {range: [new vscode.Range(document.positionAt(index), document.positionAt(index))], isNgProject: isNgProject};
 }
 
 export function findTargetName(document: TextDocument, position: vscode.Position) {
