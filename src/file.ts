@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { CancellationToken, TextDocument } from 'vscode';
 
 export function writeFile(path: string, content: string): Promise<any> {
     return new Promise((resolve, reject) => {
@@ -70,6 +71,29 @@ export function findBuild(inDirectory: string): Promise<string> {
             }
         });
     });
+}
+
+export function parseBuildFile(document: TextDocument, token: CancellationToken) {
+    const text = document.getText();
+    
+    
+    const ngProjectIndex = text.lastIndexOf('ng_project');
+    const tsProjectIndex = text.lastIndexOf('ts_project');
+    const index = Math.max(ngProjectIndex, tsProjectIndex);
+    if (token.isCancellationRequested || index == -1) {
+        return [];
+    }
+    return [new vscode.Range(document.positionAt(index), document.positionAt(index))];
+}
+
+export function findTargetName(document: TextDocument, position: vscode.Position) {
+    const projectLine = document.lineAt(position.line);
+    const subText = document.getText(new vscode.Range(projectLine.range.start, new vscode.Position(document.lineCount - 1, 0)));
+    const lineIndex = subText.indexOf('name = ');
+    const line = document.lineAt(document.positionAt(lineIndex).line + projectLine.lineNumber + 1);
+    const match = line.text.match(/\"\w+\"/g);
+    const name = match[0].substring(1, match[0].length-1);
+    return name;
 }
 
 export function findComponents(inDirectory: string): Promise<boolean> {
