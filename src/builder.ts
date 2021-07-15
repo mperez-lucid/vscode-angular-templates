@@ -97,15 +97,14 @@ export async function goToBuild(inDirectory: string) {
     });
 }
 
-function buildBuild(uri: vscode.Uri) {
+function buildBuild(uri: vscode.Uri, targetName?: string) {
     const workspace = vscode.workspace.getWorkspaceFolder(uri);
     if (workspace) {
         const terminal = vscode.window.activeTerminal;
         terminal.show(true);
         const pathToWorkspace = path.relative(process.cwd(), workspace.uri.path);
-        const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path)) + ':' + path.basename(path.dirname(uri.path));;
+        const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path)) + ':' + (targetName ? targetName : path.basename(path.dirname(uri.path)));;
         const consoleCommand = `bazel build ${pathToFile}`;
-        console.log('sending', consoleCommand);
         terminal.sendText(consoleCommand, true);
     } else {
         vscode.window.showErrorMessage('Could not find VS Code workspace.');
@@ -139,8 +138,8 @@ export function activate(context: vscode.ExtensionContext) {
     });
     context.subscriptions.push(findBuildListener);
 
-    const buildBuildListener = vscode.commands.registerCommand('ngTemplates.buildBuild', (uri: vscode.Uri) => {
-        buildBuild(uri);
+    const buildBuildListener = vscode.commands.registerCommand('ngTemplates.buildBuild', (uri: vscode.Uri, targetName: string) => {
+        buildBuild(uri, targetName);
     });
 
     const codeLensSource = new CodeLensSource();

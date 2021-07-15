@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import {parseBuildFile} from './file';
+import {parseBuildFile, findTargetName} from './file';
 import * as path from 'path';
 
 export class CodeLensSource implements vscode.CodeLensProvider {
@@ -14,10 +14,17 @@ export class CodeLensSource implements vscode.CodeLensProvider {
     }
 
     public async provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken) {
-        // const prompt = parseBuildFile(document.getText())
-        const lense = new vscode.CodeLens(new vscode.Range(0,0,0,0), {title: 'Build target', command: 'ngTemplates.buildBuild', arguments: [document.uri]});
+        const promptRanges: vscode.Range[] = parseBuildFile(document, token);
+        const lenses = []
+        promptRanges.forEach(range => {
+            lenses.push(new vscode.CodeLens(range, {title: 'Build target', command: 'ngTemplates.buildBuild', arguments: [document.uri, findTargetName(document, range.start)]}));
+        });
+
+        // if(lenses.length == 0) {
+        //     lenses.push(new vscode.CodeLens(new vscode.Range(0,0,0,0), {title: 'Build target', command: 'ngTemplates.buildBuild', arguments: [document.uri]}));
+        // }
         
-        return [lense];
+        return lenses;
     }
 
     public resolveCodeLens(codeLens: vscode.CodeLens, cancellationToken: vscode.CancellationToken) {
