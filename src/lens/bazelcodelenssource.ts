@@ -19,6 +19,7 @@ export class BazelCodeLensSource implements vscode.CodeLensProvider {
                 lenses.push(new vscode.CodeLens(range, {title: 'Format ng-module', command: 'ngTemplates.formatNgModule', arguments: [document.uri]}));
             }
             lenses.push(new vscode.CodeLens(range, {title: 'Build target', command: 'ngTemplates.buildBuild', arguments: [document.uri, findTargetName(document, range.start)]}));
+            lenses.push(new vscode.CodeLens(range, {title: 'Format TS', command: 'ngTemplates.formatTS', arguments: [document.uri]}));
         });
 
         lenses.push(new vscode.CodeLens(new vscode.Range(0,0,0,0), {title: 'Format TS', command: 'ngTemplates.formatTS', arguments: [document.uri]}));
