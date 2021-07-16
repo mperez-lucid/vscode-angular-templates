@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import {parseBuildFile, findTargetName} from '../file';
+import {parseBuildFile, findTargetName, lookForKarmaTests} from '../file';
 
 export class BazelCodeLensSource implements vscode.CodeLensProvider {
     public get selector() {
@@ -12,6 +12,7 @@ export class BazelCodeLensSource implements vscode.CodeLensProvider {
 
     public async provideCodeLenses(document: vscode.TextDocument, token: vscode.CancellationToken) {
         const parsedFile = parseBuildFile(document, token);
+        const karmaTests = lookForKarmaTests(document, token);
         const promptRanges: vscode.Range[] = parsedFile.range;
         const lenses = []
         promptRanges.forEach(range => {
@@ -21,8 +22,11 @@ export class BazelCodeLensSource implements vscode.CodeLensProvider {
             lenses.push(new vscode.CodeLens(range, {title: 'Build target', command: 'ngTemplates.buildBuild', arguments: [document.uri, findTargetName(document, range.start)]}));
             lenses.push(new vscode.CodeLens(range, {title: 'Format TS', command: 'ngTemplates.formatTS', arguments: [document.uri]}));
         });
+        karmaTests.range.forEach(karmaRange => {
+            lenses.push(new vscode.CodeLens(karmaRange, {title: 'Run tests', command: 'ngTemplates.runTests', arguments: [document.uri, findTargetName(document, karmaRange.start)]}));
+            
+        })
 
-        lenses.push(new vscode.CodeLens(new vscode.Range(0,0,0,0), {title: 'Format TS', command: 'ngTemplates.formatTS', arguments: [document.uri]}));
 
         return lenses;
     }

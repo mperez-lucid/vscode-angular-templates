@@ -87,6 +87,16 @@ export function parseBuildFile(document: TextDocument, token: CancellationToken)
     return {range: [new vscode.Range(document.positionAt(index), document.positionAt(index))], isNgProject: isNgProject};
 }
 
+export function lookForKarmaTests(document: TextDocument, token: CancellationToken) {
+    const text = document.getText();
+    
+    const index = text.lastIndexOf('karma_test');
+    if (token.isCancellationRequested || index == -1) {
+        return {range: [], foundTest: false};
+    }
+    return {range: [new vscode.Range(document.positionAt(index), document.positionAt(index))], foundTest: true};
+}
+
 export function findTargetName(document: TextDocument, position: vscode.Position) {
     const projectLine = document.lineAt(position.line);
     const subText = document.getText(new vscode.Range(projectLine.range.start, new vscode.Position(document.lineCount - 1, 0)));

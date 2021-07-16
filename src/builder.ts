@@ -112,6 +112,20 @@ function buildBuild(uri: vscode.Uri, targetName?: string) {
     }
 }
 
+function runTests(uri: vscode.Uri, targetName?: string) {
+    const workspace = vscode.workspace.getWorkspaceFolder(uri);
+    if (workspace) {
+        const terminal = vscode.window.activeTerminal;
+        terminal.show(true);
+        const pathToWorkspace = path.relative(process.cwd(), workspace.uri.path);
+        const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path)) + ':' + (targetName ? targetName : 'specs');
+        const consoleCommand = `bazel test ${pathToFile}`;
+        terminal.sendText(consoleCommand, true);
+    } else {
+        vscode.window.showErrorMessage('Could not find VS Code workspace.');
+    }
+}
+
 function formatFolder(uri: vscode.Uri) {
     const workspace = vscode.workspace.getWorkspaceFolder(uri);
     if (workspace) {
@@ -183,6 +197,10 @@ export function activate(context: vscode.ExtensionContext) {
         buildBuild(uri, targetName);
     });
 
+    const karmaTestListener = vscode.commands.registerCommand('ngTemplates.runTests', (uri: vscode.Uri, targetName: string) => {
+        runTests(uri, targetName);
+    });
+
     const bazelCodeLensSource = new BazelCodeLensSource();
 	const bazelCodeLensDisposable = vscode.languages.registerCodeLensProvider(bazelCodeLensSource.selector, bazelCodeLensSource);
     context.subscriptions.push(bazelCodeLensDisposable);
@@ -193,6 +211,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(buildBuildListener);
     context.subscriptions.push(formatNgModule);
+    context.subscriptions.push(karmaTestListener);
 }
 
 export function deactivate() {

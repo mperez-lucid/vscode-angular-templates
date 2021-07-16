@@ -24,6 +24,7 @@
         "onCommand:ngTemplates.find-build",
         "onCommand:ngTemplates.formatNgModule",
         "onCommand:ngTemplates.formatTS",
+        "onCommand:ngTemplates.runTests",
         "onLanguage:bazel",
         "onLanguage:typescript"
     ],
@@ -99,6 +100,10 @@
             {
                 "command": "ngTemplates.formatTS",
                 "title": "Format BUILD file"
+            },
+            {
+                "command": "ngTemplates.runTests",
+                "title": "Run tests"
             }
         ],
         "configuration": {
