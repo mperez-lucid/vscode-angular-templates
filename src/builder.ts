@@ -119,7 +119,7 @@ function formatFolder(uri: vscode.Uri) {
         terminal.show(true);
         const pathToWorkspace = path.relative(process.cwd(), workspace.uri.path);
         const pathToFile = path.dirname(path.relative(pathToWorkspace, uri.path));
-        const consoleCommand = `bazel format ng-module --target-filter "**/${pathToFile}"`;
+        const consoleCommand = `bazel format ts --target-filter "**/${pathToFile}"`;
         terminal.sendText(consoleCommand, true);
     } else {
         vscode.window.showErrorMessage('Could not find VS Code workspace.');
